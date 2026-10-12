@@ -64,6 +64,13 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.appcheck)
+    // Scoped per variant so the debug provider, which accepts a registered
+    // token in place of a real integrity verdict, cannot reach a release
+    // build.
+    debugImplementation(libs.firebase.appcheck.debug)
+    "qaImplementation"(libs.firebase.appcheck.debug)
+    releaseImplementation(libs.firebase.appcheck.playintegrity)
     implementation(libs.firebase.ui.auth)
     implementation(libs.firebase.auth)
     implementation(libs.play.services.auth)
