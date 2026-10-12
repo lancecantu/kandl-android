@@ -1,0 +1,20 @@
+# Normalize to LF in the repository; let Git decide the working-copy ending.
+* text=auto
+
+# Must stay LF even on Windows checkouts, or they break on Linux/macOS/CI.
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Windows-only scripts need CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Never munge binaries.
+*.jar binary
+*.png binary
+*.webp binary
+*.jpg binary
+*.ttf binary
+*.otf binary
+*.keystore binary
+*.jks binary

@@ -1,16 +1,59 @@
-# Compiled class file
+# Gradle
+.gradle/
+build/
+captures/
+local.properties
+
+# Android build outputs
+*.apk
+*.aab
+*.ap_
+*.dex
 *.class
+output.json
 
-# Log file
+# Firebase client config. Not a credential in the usual sense, but this app
+# is not distributed publicly, so keeping it out of a public repo avoids
+# handing out the project id and API key. See google-services.json.example.
+app/google-services.json
+
+# Signing material
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+service-account*.json
+*.jks
+*.keystore
+*.p12
+*.pem
+keystore.properties
+
+# Native build
+.externalNativeBuild/
+.cxx/
+
+# Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
+.kotlin/
+
+# Android Studio / IntelliJ
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetSelector.xml
+.idea/deploymentTargetDropDown.xml
+.idea/deviceManager.xml
+.idea/androidTestResultsUserPreferences.xml
+.idea/shelf/
+*.iml
+
+# Logs and crash dumps
 *.log
+hs_err_pid*
+replay_pid*
 
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
+# Package files
 *.jar
 *.war
 *.nar
@@ -19,9 +62,14 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+# Must follow *.jar above (last matching rule wins). The wrapper jar has to
+# stay tracked so `./gradlew` works on a fresh clone.
+!gradle/wrapper/gradle-wrapper.jar
 
-# Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
-.kotlin/
+# BlueJ / J2ME leftovers
+*.ctxt
+.mtj.tmp/
+
+# OS cruft
+.DS_Store
+Thumbs.db
