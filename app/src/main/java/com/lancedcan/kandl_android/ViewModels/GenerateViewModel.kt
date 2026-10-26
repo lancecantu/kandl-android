@@ -420,8 +420,11 @@ class GenerateViewModel : ViewModel() {
             }
     }
 
-    /** Writes the grocery list and the title it was edited under, then runs [onSaved]. */
-    fun saveGroceryList(onSaved: () -> Unit) {
+    /**
+     * Writes the grocery list and the title it was edited under, then hands the plan's id
+     * to [onSaved] so the caller can move on to the plan it belongs to.
+     */
+    fun saveGroceryList(onSaved: (planId: String) -> Unit) {
         val id = editingPlanId
         if (id.isNullOrBlank()) return
         _isLoading.value = true
@@ -436,7 +439,7 @@ class GenerateViewModel : ViewModel() {
                 _savedPlanName.value = _planName.value.trim()
                 _savedGroceryList.value = _groceryList.value.trim()
                 _isLoading.value = false
-                onSaved()
+                onSaved(id)
             }
             .addOnFailureListener {
                 _isLoading.value = false

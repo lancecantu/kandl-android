@@ -142,12 +142,18 @@ fun MainTabsScreen(onSignOut: () -> Unit = {}) {
                     groceryListDestination(
                         route = ROUTE_GENERATE_GROCERY_LIST,
                         ownerRoute = ROUTE_GENERATE,
-                        navController = navController
+                        navController = navController,
+                        onContinue = { planId ->
+                            navController.navigate("$ROUTE_MEAL_PLAN_EDIT/$planId") {
+                                popUpTo(ROUTE_PLANS_HOME)
+                            }
+                        }
                     )
                     groceryListDestination(
                         route = ROUTE_PLAN_GROCERY_LIST,
                         ownerRoute = "$ROUTE_MEAL_PLAN_EDIT/{$ARG_PLAN_ID}",
-                        navController = navController
+                        navController = navController,
+                        onContinue = { navController.popBackStack() }
                     )
                 }
 
@@ -244,7 +250,8 @@ private fun NavGraphBuilder.mealRecipeEditDestination(
 private fun NavGraphBuilder.groceryListDestination(
     route: String,
     ownerRoute: String,
-    navController: NavHostController
+    navController: NavHostController,
+    onContinue: (planId: String) -> Unit
 ) {
     composable("$route/{$ARG_GENERATE}") { backStackEntry ->
         val ownerEntry = rememberOwnerEntry(navController, ownerRoute, backStackEntry)
@@ -253,6 +260,7 @@ private fun NavGraphBuilder.groceryListDestination(
         GroceryListScreen(
             viewModel = generateViewModel,
             onBack = { navController.popBackStack() },
+            onContinue = onContinue,
             generateOnOpen = backStackEntry.arguments
                 ?.getString(ARG_GENERATE)
                 .toBoolean()

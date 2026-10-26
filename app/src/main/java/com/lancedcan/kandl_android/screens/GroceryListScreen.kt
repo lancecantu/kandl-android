@@ -51,12 +51,16 @@ private const val PLACEHOLDER_ALPHA = 0.6f
  * [generateOnOpen] covers the two entries that ask for a list rather than open the one
  * already saved: continuing out of the generate flow, and the prompt on a saved plan that
  * has no list yet.
+ *
+ * Saving is a step forward: [onContinue] decides where a written list lands, while [onBack]
+ * is only for leaving one behind.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroceryListScreen(
     viewModel: GenerateViewModel,
     onBack: () -> Unit,
+    onContinue: (planId: String) -> Unit,
     generateOnOpen: Boolean = false
 ) {
     val planName by viewModel.planName.collectAsState()
@@ -198,7 +202,7 @@ fun GroceryListScreen(
 
             if (!isGenerating) {
                 KandlSaveFab(
-                    onClick = { viewModel.saveGroceryList(onSaved = onBack) },
+                    onClick = { viewModel.saveGroceryList(onSaved = onContinue) },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(Spacing.s6)
@@ -250,7 +254,7 @@ fun GroceryListScreen(
             },
             onSaveAndExit = {
                 showSavePrompt = false
-                viewModel.saveGroceryList(onSaved = onBack)
+                viewModel.saveGroceryList(onSaved = onContinue)
             },
             onDismiss = { showSavePrompt = false }
         )
