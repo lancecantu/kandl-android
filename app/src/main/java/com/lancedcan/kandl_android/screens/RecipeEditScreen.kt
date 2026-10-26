@@ -23,8 +23,6 @@ import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
@@ -83,11 +81,13 @@ fun RecipeEditScreen(
     val originalEditTitle by viewModel.originalEditTitle.collectAsState()
     val originalEditRecipeText by viewModel.originalEditRecipeText.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var showLeaveConfirm by remember { mutableStateOf(false) }
+    var showSavePrompt by remember { mutableStateOf(false) }
     var showSaveOptions by remember { mutableStateOf(false) }
     var showUpdateOriginalConfirm by remember { mutableStateOf(false) }
 
     val isMealPlanEdit = mode == RecipeEditMode.MEAL_PLAN
+
+    val canSave = editTitle.isNotBlank() && editRecipeText.isNotBlank()
 
     val hasUnsavedChanges = if (recipeId == null && !isMealPlanEdit) {
         editTitle.isNotBlank() || editRecipeText.isNotBlank()
@@ -95,8 +95,8 @@ fun RecipeEditScreen(
         editTitle != originalEditTitle || editRecipeText != originalEditRecipeText
     }
 
-    BackHandler(enabled = showSaveOptions || (hasUnsavedChanges && !showLeaveConfirm)) {
-        if (showSaveOptions) showSaveOptions = false else showLeaveConfirm = true
+    BackHandler(enabled = showSaveOptions || (hasUnsavedChanges && !showSavePrompt)) {
+        if (showSaveOptions) showSaveOptions = false else showSavePrompt = true
     }
 
     LaunchedEffect(recipeId, mode) {
@@ -125,7 +125,7 @@ fun RecipeEditScreen(
                     navigationIcon = {
                         IconButton(
                             onClick = {
-                                if (hasUnsavedChanges) showLeaveConfirm = true else onBack()
+                                if (hasUnsavedChanges) showSavePrompt = true else onBack()
                             }
                         ) {
                             Icon(
@@ -253,7 +253,6 @@ fun RecipeEditScreen(
                     )
                 }
 
-                val canSave = editTitle.isNotBlank() && editRecipeText.isNotBlank()
                 val showSaveButton = canSave && (recipeId == null || hasUnsavedChanges)
 
                 if (showSaveButton && !showSaveOptions) {
@@ -368,45 +367,24 @@ fun RecipeEditScreen(
         )
     }
 
-    if (showLeaveConfirm) {
-        AlertDialog(
-            onDismissRequest = { showLeaveConfirm = false },
-            title = {
-                Text(
-                    "Are you sure you want to leave?",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
+    if (showSavePrompt) {
+        SaveChangesDialog(
+            onExit = {
+                showSavePrompt = false
+                onBack()
             },
-            text = {
-                Text(
-                    "Your changes will be lost.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showLeaveConfirm = false
-                        onBack()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.onSurface,
-                        contentColor = MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Text("Close")
+            onSaveAndExit = {
+                showSavePrompt = false
+                if (isMealPlanEdit) {
+                    saveToMealPlan(true)
+                } else {
+                    viewModel.saveRecipe()
+                    onBack()
                 }
             },
-            dismissButton = {
-                TextButton(
-                    onClick = { showLeaveConfirm = false }
-                ) {
-                    Text(
-                        "Cancel",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            onDismiss = { showSavePrompt = false },
+            saveEnabled = canSave,
+            reason = if (canSave) null else "Add a title and ingredients to save."
         )
     }
 }

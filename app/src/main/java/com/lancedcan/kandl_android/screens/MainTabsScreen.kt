@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
@@ -83,7 +84,9 @@ fun MainTabsScreen(onSignOut: () -> Unit = {}) {
             NavHost(
                 navController = navController,
                 startDestination = Tab.Plans.route,
-                modifier = Modifier.padding(paddingValues)
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .consumeWindowInsets(paddingValues)
             ) {
                 navigation(startDestination = ROUTE_PLANS_HOME, route = Tab.Plans.route) {
                     composable(ROUTE_PLANS_HOME) {

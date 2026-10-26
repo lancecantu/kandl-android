@@ -87,6 +87,33 @@ fun KandlSecondaryButton(
     }
 }
 
+/**
+ * The decisive choice in a prompt: filled with the surface's own text colour, so it reads
+ * as the weightiest action on screen in either theme.
+ */
+@Composable
+fun KandlContrastButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = KandlShapes.button,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = MaterialTheme.colorScheme.surface,
+            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA),
+            disabledContentColor = MaterialTheme.colorScheme.surface.copy(alpha = DISABLED_ALPHA)
+        )
+    ) {
+        Text(text = text, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
 @Composable
 fun KandlTextButton(
     text: String,

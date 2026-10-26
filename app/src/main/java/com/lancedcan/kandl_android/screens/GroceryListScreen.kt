@@ -62,20 +62,29 @@ fun GroceryListScreen(
     val planName by viewModel.planName.collectAsState()
     val groceryList by viewModel.groceryList.collectAsState()
     val isGenerating by viewModel.isGeneratingGroceryList.collectAsState()
+    val hasUnsavedChanges by viewModel.groceryListHasChanges.collectAsState()
     var showRegenerateConfirm by remember { mutableStateOf(false) }
+    var showSavePrompt by remember { mutableStateOf(false) }
 
     LaunchedEffect(generateOnOpen) {
         if (generateOnOpen) viewModel.startGroceryListGeneration()
     }
 
-    BackHandler(enabled = isGenerating) { }
+    BackHandler(enabled = isGenerating || (hasUnsavedChanges && !showSavePrompt)) {
+        if (!isGenerating) showSavePrompt = true
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onBack, enabled = !isGenerating) {
+                    IconButton(
+                        onClick = {
+                            if (hasUnsavedChanges) showSavePrompt = true else onBack()
+                        },
+                        enabled = !isGenerating
+                    ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
@@ -230,6 +239,20 @@ fun GroceryListScreen(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             }
+        )
+    }
+
+    if (showSavePrompt) {
+        SaveChangesDialog(
+            onExit = {
+                showSavePrompt = false
+                onBack()
+            },
+            onSaveAndExit = {
+                showSavePrompt = false
+                viewModel.saveGroceryList(onSaved = onBack)
+            },
+            onDismiss = { showSavePrompt = false }
         )
     }
 }

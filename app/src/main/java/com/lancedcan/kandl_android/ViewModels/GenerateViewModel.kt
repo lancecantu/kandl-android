@@ -74,6 +74,23 @@ class GenerateViewModel : ViewModel() {
     private val _groceryList = MutableStateFlow("")
     val groceryList: StateFlow<String> = _groceryList.asStateFlow()
 
+    private val _savedPlanName = MutableStateFlow("")
+    private val _savedGroceryList = MutableStateFlow("")
+
+    /**
+     * Whether the grocery list screen holds anything the DB does not. A list that just came
+     * back from the generator counts: it is on screen but unwritten until the user saves.
+     */
+    val groceryListHasChanges: StateFlow<Boolean> =
+        combine(
+            _planName,
+            _groceryList,
+            _savedPlanName,
+            _savedGroceryList
+        ) { name, list, savedName, savedList ->
+            name.trim() != savedName || list.trim() != savedList
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     /** Set while the cloud function is building a list, which freezes the editor. */
     private val _isGeneratingGroceryList = MutableStateFlow(false)
     val isGeneratingGroceryList: StateFlow<Boolean> = _isGeneratingGroceryList.asStateFlow()
@@ -257,6 +274,8 @@ class GenerateViewModel : ViewModel() {
                 val plan = doc.toObject(MealPlan::class.java)
                 _planName.value = plan?.name.orEmpty()
                 _groceryList.value = plan?.ingredientText.orEmpty()
+                _savedPlanName.value = _planName.value.trim()
+                _savedGroceryList.value = _groceryList.value.trim()
                 _isPlanSaved.value = true
                 val meals = plan?.meals ?: emptyList()
                 val recipeIds = plan?.recipeIdsList ?: emptyList()
@@ -318,6 +337,8 @@ class GenerateViewModel : ViewModel() {
             .addOnSuccessListener { doc ->
                 editingPlanId = doc.id
                 _planName.value = name
+                _savedPlanName.value = name
+                _savedGroceryList.value = ""
                 _loadedPlanSlots.value = _mealSlots.value
                 _isPlanSaved.value = true
                 _isLoading.value = false
@@ -412,6 +433,8 @@ class GenerateViewModel : ViewModel() {
                 )
             )
             .addOnSuccessListener {
+                _savedPlanName.value = _planName.value.trim()
+                _savedGroceryList.value = _groceryList.value.trim()
                 _isLoading.value = false
                 onSaved()
             }
