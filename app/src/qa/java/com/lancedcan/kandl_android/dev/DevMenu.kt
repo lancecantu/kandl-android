@@ -72,7 +72,7 @@ private fun DevMenuLauncher(onClick: () -> Unit, modifier: Modifier = Modifier) 
         color = OnSurface,
         modifier = modifier
             .statusBarsPadding()
-            .padding(start = Spacing.s3, top = Spacing.s2)
+            .padding(start = Spacing.s8, top = Spacing.s2)
             .clip(KandlShapes.badge)
             .background(KandlTertiaryYellow.copy(alpha = 0.55f))
             .clickable(onClick = onClick)
