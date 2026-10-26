@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
@@ -203,9 +205,8 @@ private fun NavGraphBuilder.mealRecipeEditDestination(
     recipeViewModel: RecipeManagerViewModel
 ) {
     composable("$route/{$ARG_MEAL_INDEX}") { backStackEntry ->
-        val ownerEntry = remember(backStackEntry) {
-            navController.getBackStackEntry(ownerRoute)
-        }
+        val ownerEntry = rememberOwnerEntry(navController, ownerRoute, backStackEntry)
+            ?: return@composable
         val generateViewModel: GenerateViewModel = viewModel(ownerEntry)
         val mealSlots by generateViewModel.mealSlots.collectAsState()
         val mealIndex = backStackEntry.arguments
@@ -243,9 +244,8 @@ private fun NavGraphBuilder.groceryListDestination(
     navController: NavHostController
 ) {
     composable("$route/{$ARG_GENERATE}") { backStackEntry ->
-        val ownerEntry = remember(backStackEntry) {
-            navController.getBackStackEntry(ownerRoute)
-        }
+        val ownerEntry = rememberOwnerEntry(navController, ownerRoute, backStackEntry)
+            ?: return@composable
         val generateViewModel: GenerateViewModel = viewModel(ownerEntry)
         GroceryListScreen(
             viewModel = generateViewModel,
@@ -255,6 +255,23 @@ private fun NavGraphBuilder.groceryListDestination(
                 .toBoolean()
         )
     }
+}
+
+@Composable
+private fun rememberOwnerEntry(
+    navController: NavHostController,
+    ownerRoute: String,
+    backStackEntry: NavBackStackEntry
+): NavBackStackEntry? {
+    val ownerEntry = remember(backStackEntry) {
+        runCatching { navController.getBackStackEntry(ownerRoute) }.getOrNull()
+    }
+    if (ownerEntry == null) {
+        LaunchedEffect(backStackEntry) {
+            navController.popBackStack(backStackEntry.destination.id, inclusive = true)
+        }
+    }
+    return ownerEntry
 }
 
 private const val ROUTE_PLANS_HOME = "plans_home"
