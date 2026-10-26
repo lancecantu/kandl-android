@@ -6,15 +6,20 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.functions.StreamResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 /**
  * A meal plan's own copy of a recipe. Edits made while building the plan land here and
@@ -36,6 +41,10 @@ private fun MealSlot.toPlanMeal() = PlanMeal(
     name = recipeName.orEmpty(),
     recipeText = recipeText.orEmpty()
 )
+
+/** One field of a callable's payload, which the functions SDK hands back as a raw map. */
+private inline fun <reified T> Any?.field(name: String): T? =
+    (this as? Map<*, *>)?.get(name) as? T
 
 /** Plans aren't named anywhere in the flow yet, so they are stamped with the day instead. */
 private fun defaultPlanName(): String {
@@ -385,10 +394,15 @@ class GenerateViewModel : ViewModel() {
     }
 
     /**
-     * Sends the plan's meals to the generate-list cloud function and drops the list it
-     * returns into [groceryList], which stays frozen until it lands. A regenerate clears
-     * the old list on the way out but puts it back if the call fails, so a dropped request
-     * doesn't cost the user what they already had.
+     * Sends the plan's meals to the generate-list cloud function and writes the list into
+     * [groceryList] as it streams back, leaving the editor frozen until the stream ends.
+     * Streaming is what `stream` buys over `call`: it sends the `Accept: text/event-stream`
+     * the function keys its chunks off, so a `call` here silently gets one response at the
+     * end no matter what the function does.
+     *
+     * A regenerate clears the old list on the way out and puts it back if the stream fails,
+     * discarding whatever text had arrived: a dropped request shouldn't cost the user the
+     * list they already had, or leave them one that stops halfway.
      */
     fun startGroceryListGeneration() {
         if (_isGeneratingGroceryList.value) return
@@ -407,17 +421,38 @@ class GenerateViewModel : ViewModel() {
         _groceryList.value = ""
 
         functions.getHttpsCallable(GENERATE_GROCERY_LIST)
-            .call(mapOf("meals" to meals))
-            .addOnSuccessListener { result ->
-                val list = (result.data as? Map<*, *>)?.get("groceryList") as? String
-                _groceryList.value = list ?: previousList
-                _isGeneratingGroceryList.value = false
-            }
-            .addOnFailureListener { error ->
-                Log.e(TAG, "Grocery list generation failed", error)
-                _groceryList.value = previousList
-                _isGeneratingGroceryList.value = false
-            }
+            .withTimeout(GENERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .stream(mapOf("meals" to meals))
+            .subscribe(object : Subscriber<StreamResponse> {
+                override fun onSubscribe(subscription: Subscription) {
+                    subscription.request(Long.MAX_VALUE)
+                }
+
+                override fun onNext(response: StreamResponse) {
+                    when (response) {
+                        is StreamResponse.Message -> {
+                            val chunk = response.message.data.field<String>("text")
+                            if (chunk != null) _groceryList.update { it + chunk }
+                        }
+                        // The last event carries the whole list, so the text assembled
+                        // from the chunks gives way to it rather than adding to it.
+                        is StreamResponse.Result -> {
+                            val list = response.result.data.field<String>("groceryList")
+                            if (list != null) _groceryList.value = list
+                        }
+                    }
+                }
+
+                override fun onError(error: Throwable) {
+                    Log.e(TAG, "Grocery list generation failed", error)
+                    _groceryList.value = previousList
+                    _isGeneratingGroceryList.value = false
+                }
+
+                override fun onComplete() {
+                    _isGeneratingGroceryList.value = false
+                }
+            })
     }
 
     /**
@@ -487,6 +522,14 @@ class GenerateViewModel : ViewModel() {
     companion object {
         private const val MEAL_PLANS = "mealPlans"
         private const val GENERATE_GROCERY_LIST = "generateGroceryList"
+
+        /**
+         * Covers the whole stream, not just its first byte, so the SDK's 70s default would
+         * cut a long generation off mid-list. Set past the function's own 120s deadline to
+         * let the error it raises reach the client instead.
+         */
+        private const val GENERATION_TIMEOUT_SECONDS = 130L
+
         private const val TAG = "GenerateViewModel"
         private const val MIN_MEALS = 2
         private const val MAX_MEALS = 21

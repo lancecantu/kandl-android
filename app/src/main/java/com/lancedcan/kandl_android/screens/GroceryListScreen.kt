@@ -2,8 +2,10 @@ package com.lancedcan.kandl_android
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,6 +40,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import com.lancedcan.kandl_android.designsystem.ComponentSize
 import com.lancedcan.kandl_android.designsystem.Spacing
+import com.lancedcan.kandl_android.designsystem.components.KandlInlineSpinner
 import com.lancedcan.kandl_android.designsystem.components.KandlPrimaryButton
 import com.lancedcan.kandl_android.designsystem.components.KandlSaveFab
 import com.lancedcan.kandl_android.designsystem.components.KandlTextButton
@@ -183,16 +186,25 @@ fun GroceryListScreen(
                                 .padding(vertical = Spacing.s4)
                         ) {
                             if (groceryList.isEmpty()) {
-                                Text(
-                                    text = if (isGenerating) {
-                                        "Building your grocery list..."
-                                    } else {
-                                        "Your grocery list will appear here..."
-                                    },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        .copy(alpha = PLACEHOLDER_ALPHA)
-                                )
+                                val placeholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    .copy(alpha = PLACEHOLDER_ALPHA)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(Spacing.s3)
+                                ) {
+                                    Text(
+                                        text = if (isGenerating) {
+                                            "Building your grocery list..."
+                                        } else {
+                                            "Your grocery list will appear here..."
+                                        },
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = placeholderColor
+                                    )
+                                    if (isGenerating) {
+                                        KandlInlineSpinner(color = placeholderColor)
+                                    }
+                                }
                             }
                             innerTextField()
                         }

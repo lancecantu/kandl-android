@@ -69,6 +69,9 @@ object ComponentSize {
     val wheelRow = 56.dp
     val textAreaMin = 200.dp
 
+    /** Stroke of a spinner drawn at text size, where the Material default reads as a blob. */
+    val inlineSpinnerStroke = 2.dp
+
     /** Height the grocery list preview is capped at before its text is clipped. */
     val groceryPreviewMax = 160.dp
 
